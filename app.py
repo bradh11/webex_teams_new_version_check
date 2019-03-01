@@ -88,7 +88,7 @@ def add_room_to_database(json_data):
     """
     room_id = json_data["data"]["roomId"]
     room = api.rooms.get(roomId=room_id)
-    print(f"bot is spawning in: {room.title}")
+    print(f"webhook received from: {room.title}")
 
     room_type = json_data["data"]["roomType"]
 
@@ -190,7 +190,8 @@ def webhook_receiver():
     json_data = request.json
     # logger.debug(json_data)
     # update database with room info if it does not exist yet
-    add_room_to_database(json_data)
+    if json_data["data"]["personEmail"] != bot_email:
+        add_room_to_database(json_data)
 
     # print(json_data)
     if json_data["resource"] == "memberships" and json_data["event"] == "created":
