@@ -5,6 +5,6 @@ This bot was created to autonomously check if a new version of Webex Teams was r
 ## To use the bot
 
 1. open webex teams application
-2. add the bot to a space or invite it as a 1-1 conversation
+2. add the bot to a space or invite it as a 1-1 conversation. The bot name is `webexteamsupdatealert@webex.bot`
 3. to unsubscriber, simply @mention the bot and type `unsubscribe` or if in a 1-1 space, type `unsubscribe`
 4. If you want to get an update on what the latest version of Webex Teams is, simply type `version`
