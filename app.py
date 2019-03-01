@@ -84,17 +84,15 @@ def add_room_to_database(json_data):
     # Get Room details from room ID and update the DB if room does not exist
     """
     room_id = json_data["data"]["roomId"]
-    print("\n" * 5)
     room = api.rooms.get(roomId=room_id)
-    print(room)
     print(f"bot is spawning in: {room.title}")
 
     room_type = json_data["data"]["roomType"]
-    print(room_id)
-    print(room_type)
+
     bot_user = db.search(User.room_id == room_id)
     if bot_user == [] or bot_user == None:
         print(f"{room.title} not in db")
+        logger.info(f"{room.title} not in db")
         db.insert(
             {
                 "room_id": room_id,
@@ -106,6 +104,52 @@ def add_room_to_database(json_data):
                 "createdAt": str(datetime.now()),
             }
         )
+
+
+def unsubscribe_to_updates(room_id, reason="message"):
+    """
+    update the database subscription to false if the user types `unsubscribe`
+    """
+    bot_user = db.search(User.room_id == room_id)
+    bot_user[0]["subscribed"] = False
+    db.write_back(bot_user)
+    logger.info(f"room has unsubscribed from updates: {room_id}")
+    print(f"room has unsubscribed from updates: {room_id}")
+    if reason == "message":
+        api.messages.create(
+            roomId=room_id,
+            markdown=f"This room is now unsubscribed from update announcements.",
+        )
+
+
+def subscribe_to_updates(room_id, reason="message"):
+    """
+    update the database subscription to True if the user types `subscribe`
+    """
+    bot_user = db.search(User.room_id == room_id)
+    bot_user[0]["subscribed"] = True
+
+    logger.info(f"room has subscribed to updates: {room_id}")
+    print(f"room has subscribed to updates: {room_id}")
+    if reason == "message":
+        api.messages.create(
+            roomId=room_id,
+            markdown=f"This room is now subscribed to update announcements.",
+        )
+    else:
+        print(bot_user)
+        if bot_user[0]["room_type"] == "group":
+            api.messages.create(
+                roomId=room_id,
+                markdown=f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you as me not to.\n\n* If you want to stop receiving automatic updates simply @mention me and type `unsubscribe`.\n\n* If you want to opt back in simply @mention me and type `subscribe`",
+            )
+
+        else:
+            api.messages.create(
+                roomId=room_id,
+                markdown=f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you as me not to.\n\n* If you want to stop receiving automatic updates simply type `unsubscribe`.\n\n* If you want to opt back in simply type `subscribe`",
+            )
+    db.write_back(bot_user)
 
 
 def respond_to_message(json_data):
@@ -124,11 +168,15 @@ def respond_to_message(json_data):
         return  # break out of this function
 
     print(received_message)
-
-    latest_versions = get_latest_version()
-    version_messages = latest_version_message(latest_versions)
-    for message in version_messages:
-        api.messages.create(roomId=room_id, markdown=f"{message}")
+    if "unsubscribe" in received_message.text:
+        unsubscribe_to_updates(room_id, reason="message")
+    elif "subscribe" in received_message.text:
+        subscribe_to_updates(room_id)
+    else:
+        latest_versions = get_latest_version()
+        version_messages = latest_version_message(latest_versions)
+        for message in version_messages:
+            api.messages.create(roomId=room_id, markdown=f"{message}")
 
 
 @app.route(f"/{bot_name}", methods=["POST"])
@@ -146,10 +194,15 @@ def webhook_receiver():
     # print(json_data)
     if json_data["resource"] == "memberships" and json_data["event"] == "created":
         add_room_to_database(json_data)
+        subscribe_to_updates(
+            room_id=json_data["data"]["roomId"], reason="deleted_membership"
+        )
 
     if json_data["resource"] == "memberships" and json_data["event"] == "deleted":
         # disable subscription for room
-        pass
+        unsubscribe_to_updates(
+            room_id=json_data["data"]["roomId"], reason="deleted_membership"
+        )
 
     if json_data["resource"] == "messages" and json_data["event"] == "created":
         respond_to_message(json_data)
