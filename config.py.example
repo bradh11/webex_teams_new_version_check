@@ -1,0 +1,22 @@
+"""
+Webex Teams version check BOT
+Author: Brad Haas
+"""
+import logging
+
+# from developer.webex.com, go to create new bot and get the email, name and token
+webex_teams_token = "-d39b-4b8b-8814-2b235d777a10"
+bot_email = "webexteamsupdatealert@webex.bot"
+bot_name = "WebexTeamsVersion"
+
+webhook_listener_base_url = "https://mutuo.serveo.net"
+webhook_port = 443
+
+logging_config = {
+    "format": "%(asctime)s %(levelname)-8s %(message)s",
+    "filename": "logfile.log",
+    "level": logging.INFO,
+    "datefmt": "%a, %d %b %Y %H:%M:%S",
+    "filemode": "a",
+}
+
