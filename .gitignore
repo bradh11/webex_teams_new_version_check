@@ -2,3 +2,4 @@
 /__pycache__
 *.log
 db.json
+/version_cache.json
