@@ -82,7 +82,7 @@ def compare_latest_version(version_info, last_version=0):
     pass
 
 
-def add_room_to_database(json_data):
+def update_room_in_database(json_data):
     """
     # Get Room details from room ID and update the DB if room does not exist
     """
@@ -107,6 +107,13 @@ def add_room_to_database(json_data):
                 "createdAt": str(datetime.now()),
             }
         )
+    else:
+        bot_user[0]["last_access"] = str(datetime.now())
+        bot_user[0]["room_title"] = room.title
+        bot_user[0]["help_requests"]["general"] = (
+            bot_user[0]["help_requests"]["general"] + 1
+        )
+        db.write_back(bot_user)
 
 
 def unsubscribe_to_updates(room_id, reason="message"):
@@ -191,11 +198,11 @@ def webhook_receiver():
     # logger.debug(json_data)
     # update database with room info if it does not exist yet
     if json_data["data"]["personEmail"] != bot_email:
-        add_room_to_database(json_data)
+        update_room_in_database(json_data)
 
     # print(json_data)
     if json_data["resource"] == "memberships" and json_data["event"] == "created":
-        add_room_to_database(json_data)
+        update_room_in_database(json_data)
         subscribe_to_updates(
             room_id=json_data["data"]["roomId"], reason="deleted_membership"
         )
