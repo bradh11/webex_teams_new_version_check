@@ -30,6 +30,9 @@ webhook_listener = webhook_listener_base_url + f":{webhook_port}/{bot_name}"
 
 app = Flask(__name__)
 
+help_message_group = f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you as me not to.\n\n* If you want to stop receiving automatic updates simply @mention me and type `unsubscribe`.\n\n* If you want to opt back in simply @mention me and type `subscribe`"
+help_message_direct = f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you as me not to.\n\n* If you want to stop receiving automatic updates simply type `unsubscribe`.\n\n* If you want to opt back in simply type `subscribe`"
+
 
 def register_webhook():
     # cleanout any old webhooks the bot created in the past when initializing
@@ -139,16 +142,10 @@ def subscribe_to_updates(room_id, reason="message"):
     else:
         print(bot_user)
         if bot_user[0]["room_type"] == "group":
-            api.messages.create(
-                roomId=room_id,
-                markdown=f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you as me not to.\n\n* If you want to stop receiving automatic updates simply @mention me and type `unsubscribe`.\n\n* If you want to opt back in simply @mention me and type `subscribe`",
-            )
+            api.messages.create(roomId=room_id, markdown=help_message_group)
 
         else:
-            api.messages.create(
-                roomId=room_id,
-                markdown=f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you as me not to.\n\n* If you want to stop receiving automatic updates simply type `unsubscribe`.\n\n* If you want to opt back in simply type `subscribe`",
-            )
+            api.messages.create(roomId=room_id, markdown=help_message_direct)
     db.write_back(bot_user)
 
 
@@ -172,6 +169,10 @@ def respond_to_message(json_data):
         unsubscribe_to_updates(room_id, reason="message")
     elif "subscribe" in received_message.text:
         subscribe_to_updates(room_id)
+    elif "help" in received_message.text and room_type == "direct":
+        api.messages.create(roomId=room_id, markdown=help_message_direct)
+    elif "help" in received_message.text and room_type == "group":
+        api.messages.create(roomId=room_id, markdown=help_message_group)
     else:
         latest_versions = get_latest_version()
         version_messages = latest_version_message(latest_versions)
