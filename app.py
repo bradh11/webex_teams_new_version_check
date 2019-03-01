@@ -189,13 +189,13 @@ def respond_to_message(json_data):
         return  # break out of this function
 
     # print(received_message)
-    if "unsubscribe" in received_message.text:
+    if "unsubscribe" in received_message.text.lower():
         unsubscribe_to_updates(room_id, reason="message")
-    elif "subscribe" in received_message.text:
+    elif "subscribe" in received_message.text.lower():
         subscribe_to_updates(room_id)
-    elif "help" in received_message.text and room_type == "direct":
+    elif "help" in received_message.text.lower() and room_type == "direct":
         api.messages.create(roomId=room_id, markdown=help_message_direct)
-    elif "help" in received_message.text and room_type == "group":
+    elif "help" in received_message.text.lower() and room_type == "group":
         api.messages.create(roomId=room_id, markdown=help_message_group)
     else:
         latest_versions = get_latest_version()
@@ -236,14 +236,23 @@ def webhook_receiver():
     return "200"
 
 
-def alert_subscribers(messages, subscribers):
+def alert_subscribers(messages):
     """
     Alert subscribers that a version has changed
     """
+    subscribers = db.search(User.subscribed == True)
 
-    print(subscribers)
     for user in subscribers:
         print(f"sending {messages} to {user['room_title']}")
+        # TODO: api.messages.create  and send update messages
+        api.messages.create(
+            user["room_id"], markdown=f"## Webex Teams Update Notification:"
+        )
+        for message in messages:
+            api.messages.create(user["room_id"], markdown=message)
+        api.messages.create(
+            user["room_id"], markdown=f"\nTo unsubscribe just type `unsubscribe`\n\n"
+        )
 
 
 def construct_version_update_messages(version_check):
@@ -251,7 +260,7 @@ def construct_version_update_messages(version_check):
     for ver in version_check:
         for platform, version in ver.items():
             messages.append(
-                f"**Notification:** Webex Teams for {platform} has been updated to version {version}."
+                f"Webex Teams for {platform} has been updated to version {version}."
             )
     return messages
 
@@ -269,15 +278,13 @@ def periodic_version_check():
 
     if not version_changed:
         print(f"no change in version")
-
+        pass
     else:
         update_messages = construct_version_update_messages(version_changed)
-        # TODO: alert_subscribers of change and send update messages
-        Sub_Query = Query()
-        subscribers = db.search(Sub_Query.subscribed == True)
-        alert_subscribers(update_messages, subscribers=subscribers)
+        # alert_subscribers of change and send update messages
+        alert_subscribers(update_messages)
         # TODO: update local version_cache.json file
-        print(update_messages)
+        # print(update_messages)
 
     threading.Timer(interval / 2, periodic_version_check).start()
 
