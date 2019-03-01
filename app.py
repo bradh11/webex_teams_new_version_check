@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import logging
@@ -68,7 +69,16 @@ def get_latest_version():
     }
 
 
+def check_version_cache_exists():
+    exists = os.path.isfile("version_cache.json")
+    if exists:
+        pass
+    else:
+        update_version_cache(get_latest_version())
+
+
 def get_old_version():
+    check_version_cache_exists()
     with open("version_cache.json", "rb") as ov:
         version_file = ov.read()
         version_dict = json.loads(version_file)
@@ -236,6 +246,12 @@ def webhook_receiver():
     return "200"
 
 
+def update_version_cache(latest_versions):
+    with open("version_cache.json", "w") as outfile:
+        json.dump(latest_versions, outfile, indent=2)
+    return True
+
+
 def alert_subscribers(messages):
     """
     Alert subscribers that a version has changed
@@ -284,6 +300,7 @@ def periodic_version_check():
         # alert_subscribers of change and send update messages
         alert_subscribers(update_messages)
         # TODO: update local version_cache.json file
+        update_version_cache(latest_versions)
         # print(update_messages)
 
     threading.Timer(interval / 2, periodic_version_check).start()
