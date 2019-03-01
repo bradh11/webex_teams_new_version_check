@@ -236,16 +236,14 @@ def webhook_receiver():
     return "200"
 
 
-def alert_subscribers(messages):
+def alert_subscribers(messages, subscribers):
     """
     Alert subscribers that a version has changed
     """
-    bot_users = db.search(User.subscribed == True)
-    print(bot_users)
-    for user in bot_users:
-        print(f"sending {messages} to {user['room_title']}")
 
-    pass
+    print(subscribers)
+    for user in subscribers:
+        print(f"sending {messages} to {user['room_title']}")
 
 
 def construct_version_update_messages(version_check):
@@ -271,11 +269,13 @@ def periodic_version_check():
 
     if not version_changed:
         print(f"no change in version")
-        pass
+
     else:
         update_messages = construct_version_update_messages(version_changed)
         # TODO: alert_subscribers of change and send update messages
-        alert_subscribers(update_messages)
+        Sub_Query = Query()
+        subscribers = db.search(Sub_Query.subscribed == True)
+        alert_subscribers(update_messages, subscribers=subscribers)
         # TODO: update local version_cache.json file
         print(update_messages)
 
@@ -290,8 +290,8 @@ if __name__ == "__main__":
     for message in version_messages:
         print(message)
 
-    p = mp.Process(target=periodic_version_check)
-    p.daemon = True
-    p.start()
+    t = threading.Thread(target=periodic_version_check)
+    t.start()
+
     print(f"bot is running")
     app.run(debug=True, host="0.0.0.0", port=webhook_port, use_reloader=False)
