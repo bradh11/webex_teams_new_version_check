@@ -1,5 +1,8 @@
 import json
+import time
 import logging
+import multiprocessing as mp
+import threading
 from datetime import datetime
 from flask import Flask, request
 import requests
@@ -19,7 +22,8 @@ logging.basicConfig(**logging_config)
 logger = logging.getLogger()
 
 # initialize the database
-db = TinyDB("db.json")
+db = TinyDB("db.json", indent=2, sort_keys=True)
+db.table(name="_default", cache_size=0)
 User = Query()
 
 # Initialize the Bot in Webex Teams
@@ -64,6 +68,13 @@ def get_latest_version():
     }
 
 
+def get_old_version():
+    with open("version_cache.json", "rb") as ov:
+        version_file = ov.read()
+        version_dict = json.loads(version_file)
+    return version_dict
+
+
 def latest_version_message(version_info):
     """
     return a message formatted with the latest versions known available
@@ -77,9 +88,16 @@ def latest_version_message(version_info):
     return messages
 
 
-def compare_latest_version(version_info, last_version=0):
+def compare_latest_version(version_info):
     # pull last known version and compare it to the latest one received from get_latest_version()
-    pass
+    updated_versions = []
+    old_ver = get_old_version()
+    new_ver = version_info
+    for platform, version in old_ver.items():
+        if new_ver[platform] > version:
+            updated_versions.append({platform: new_ver[platform]})
+
+    return updated_versions
 
 
 def update_room_in_database(json_data):
@@ -147,7 +165,6 @@ def subscribe_to_updates(room_id, reason="message"):
             markdown=f"This room is now subscribed to update announcements.",
         )
     else:
-        print(bot_user)
         if bot_user[0]["room_type"] == "group":
             api.messages.create(roomId=room_id, markdown=help_message_group)
 
@@ -171,7 +188,7 @@ def respond_to_message(json_data):
     if email == bot_email:
         return  # break out of this function
 
-    print(received_message)
+    # print(received_message)
     if "unsubscribe" in received_message.text:
         unsubscribe_to_updates(room_id, reason="message")
     elif "subscribe" in received_message.text:
@@ -219,16 +236,62 @@ def webhook_receiver():
     return "200"
 
 
-for room in bot_room_list:
-    logger.info(f"bot is spawning in: {room.title}")
+def alert_subscribers(messages):
+    """
+    Alert subscribers that a version has changed
+    """
+    bot_users = db.search(User.subscribed == True)
+    print(bot_users)
+    for user in bot_users:
+        print(f"sending {messages} to {user['room_title']}")
+
+    pass
+
+
+def construct_version_update_messages(version_check):
+    messages = []
+    for ver in version_check:
+        for platform, version in ver.items():
+            messages.append(
+                f"**Notification:** Webex Teams for {platform} has been updated to version {version}."
+            )
+    return messages
+
+
+def periodic_version_check():
+    """ 
+    This function will run inside a loop and check if versions have changed every 30 minutes.
+    """
+    interval = 30  # frequency of checks
+    time.sleep(interval / 2)
+
+    logger.debug(f"checking version for change")
+    latest_versions = get_latest_version()
+    version_changed = compare_latest_version(latest_versions)
+
+    if not version_changed:
+        print(f"no change in version")
+        pass
+    else:
+        update_messages = construct_version_update_messages(version_changed)
+        # TODO: alert_subscribers of change and send update messages
+        alert_subscribers(update_messages)
+        # TODO: update local version_cache.json file
+        print(update_messages)
+
+    threading.Timer(interval / 2, periodic_version_check).start()
 
 
 if __name__ == "__main__":
     register_webhook()
     latest_versions = get_latest_version()
+    # print(latest_versions)
     version_messages = latest_version_message(latest_versions)
     for message in version_messages:
         print(message)
 
+    p = mp.Process(target=periodic_version_check)
+    p.daemon = True
+    p.start()
     print(f"bot is running")
-    app.run(debug=True, host="0.0.0.0", port=webhook_port)
+    app.run(debug=True, host="0.0.0.0", port=webhook_port, use_reloader=False)
