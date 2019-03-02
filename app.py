@@ -97,9 +97,9 @@ def latest_version_message(version_info):
             f"The latest version of Webex Teams for {platform} is **{version}**"
         )
         messages.append(message_body)
-
-    messages.append(f"Release notes can be found [here]({release_notes})")
-    messages.append(f"To check out whats new click [here]({whats_new})")
+    messages.append(
+        f"To learn more, you can check out the [release notes]({release_notes}) and find out [what's new]({whats_new})"
+    )
 
     return messages
 
@@ -284,8 +284,11 @@ def construct_version_update_messages(version_check):
             messages.append(
                 f"Webex Teams for {platform} has been updated to version {version}."
             )
-    messages.append(f"Release notes can be found [here]({release_notes})")
-    messages.append(f"To check out whats new click [here]({whats_new})")
+
+    messages.append(
+        f"To learn more, you can check out the [release notes]({release_notes}) and find out [what's new]({whats_new})"
+    )
+
     return messages
 
 
