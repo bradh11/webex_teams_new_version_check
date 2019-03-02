@@ -32,6 +32,12 @@ bot_room_list = api.rooms.list()
 registered_webhooks = api.webhooks.list()
 webhook_listener = webhook_listener_base_url + f":{webhook_port}/{bot_name}"
 
+
+# initialize the db for users who do not yet exist
+for room in bot_room_list:
+    print(f"bot is spawning in {room.title}")
+
+
 app = Flask(__name__)
 
 help_message_group = f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you ask me not to.\n\n* If you want to stop receiving automatic updates simply @mention me and type `unsubscribe`.\n\n* If you want to opt back in simply @mention me and type `subscribe`\n\n* If you want to know the latest version, simply type `version`"
