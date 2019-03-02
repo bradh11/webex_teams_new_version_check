@@ -35,8 +35,8 @@ webhook_listener = webhook_listener_base_url + f":{webhook_port}/{bot_name}"
 
 app = Flask(__name__)
 
-help_message_group = f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you ask me not to.\n\n* If you want to stop receiving automatic updates simply @mention me and type `unsubscribe`.\n\n* If you want to opt back in simply @mention me and type `subscribe`\n\nIf you want to know the latest version, simply type `version`"
-help_message_direct = f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you ask me not to.\n\n* If you want to stop receiving automatic updates simply type `unsubscribe`.\n\n* If you want to opt back in simply type `subscribe`\n\nIf you want to know the latest version, simply type `version`"
+help_message_group = f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you ask me not to.\n\n* If you want to stop receiving automatic updates simply @mention me and type `unsubscribe`.\n\n* If you want to opt back in simply @mention me and type `subscribe`\n\n* If you want to know the latest version, simply type `version`"
+help_message_direct = f"## Webex Teams Update Notifier\nThank you for adding me to your space.  I am here to alert you when new versions of Webex Teams are released by Cisco.  I will do this automatically unless you ask me not to.\n\n* If you want to stop receiving automatic updates simply type `unsubscribe`.\n\n* If you want to opt back in simply type `subscribe`\n\n* If you want to know the latest version, simply type `version`"
 release_notes = f"https://help.webex.com/en-us/mqkve8/Cisco-Webex-Teams-Release-Notes"
 whats_new = f"https://help.webex.com/en-us/8dmbcr/What-s-New-in-Cisco-Webex-Teams"
 
