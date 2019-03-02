@@ -2,7 +2,6 @@ import os
 import json
 import time
 import logging
-import multiprocessing as mp
 import threading
 from datetime import datetime
 from flask import Flask, request
