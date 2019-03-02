@@ -288,7 +288,7 @@ def periodic_version_check():
     """ 
     This function will run inside a loop and check if versions have changed every 30 minutes.
     """
-    interval = 30  # frequency of checks
+    interval = 180  # frequency of checks
     time.sleep(interval / 2)
 
     logger.debug(f"checking version for change")
