@@ -7,6 +7,7 @@ from datetime import datetime
 from flask import Flask, request
 import requests
 from webexteamssdk import WebexTeamsAPI
+from apscheduler.schedulers.background import BackgroundScheduler
 from tinydb import TinyDB, Query, where
 from tinydb.operations import delete, increment, decrement
 from config import (
@@ -49,8 +50,10 @@ whats_new = f"https://help.webex.com/en-us/8dmbcr/What-s-New-in-Cisco-Webex-Team
 def register_webhook():
     # cleanout any old webhooks the bot created in the past when initializing
     for webhook in registered_webhooks:
-        api.webhooks.delete(webhook.id)
-
+        try:
+            api.webhooks.delete(webhook.id)
+        except Exception as e:
+            logger.info(e)
     # Register the BOT webhook for new message notification
     webhook_reg = api.webhooks.create(
         name=bot_name, targetUrl=webhook_listener, resource="all", event="all"
@@ -239,13 +242,13 @@ def webhook_receiver():
         update_room_in_database(json_data)
 
     # print(json_data)
-    if json_data["resource"] == "memberships" and json_data["event"] == "created":
+    if json_data["resource"] == "memberships" and json_data["event"] == "created" and json_data["data"]["roomType"] == "direct":
         update_room_in_database(json_data)
         subscribe_to_updates(
             room_id=json_data["data"]["roomId"], reason="deleted_membership"
         )
 
-    if json_data["resource"] == "memberships" and json_data["event"] == "deleted":
+    if json_data["resource"] == "memberships" and json_data["event"] == "deleted" and json_data["data"]["roomType"] == "direct":
         # disable subscription for room
         unsubscribe_to_updates(
             room_id=json_data["data"]["roomId"], reason="deleted_membership"
@@ -270,17 +273,19 @@ def alert_subscribers(messages):
     subscribers = db.search(User.subscribed == True)
 
     for user in subscribers:
-        print(f"sending {messages} to {user['room_title']}")
+        logger.info(f"sending {messages} to {user['room_title']}")
         # TODO: api.messages.create  and send update messages
-        api.messages.create(
-            user["room_id"], markdown=f"## Webex Teams Update Notification:"
-        )
-        for message in messages:
-            api.messages.create(user["room_id"], markdown=message)
-        api.messages.create(
-            user["room_id"], markdown=f"\nTo unsubscribe just type `unsubscribe`\n\n"
-        )
-
+        try:
+            api.messages.create(
+                user["room_id"], markdown=f"## Webex Teams Update Notification:"
+            )
+            for message in messages:
+                api.messages.create(user["room_id"], markdown=message)
+            api.messages.create(
+                user["room_id"], markdown=f"\nTo unsubscribe just type `unsubscribe`\n\n"
+            )
+        except Exception as e:
+            logger.error(e)
 
 def construct_version_update_messages(version_check):
     messages = []
@@ -301,8 +306,8 @@ def periodic_version_check():
     """ 
     This function will run inside a loop and check if versions have changed every 30 minutes.
     """
-    interval = 180  # frequency of checks
-    time.sleep(interval / 2)
+    # interval = 180  # frequency of checks
+    # time.sleep(interval / 2)
 
     logger.debug(f"checking version for change")
     latest_versions = get_latest_version()
@@ -317,7 +322,7 @@ def periodic_version_check():
         alert_subscribers(update_messages)
         update_version_cache(latest_versions)
 
-    threading.Timer(interval / 2, periodic_version_check).start()
+    # threading.Timer(interval / 2, periodic_version_check).start()
 
 
 if __name__ == "__main__":
@@ -328,8 +333,9 @@ if __name__ == "__main__":
     for message in version_messages:
         print(message)
 
-    t = threading.Thread(target=periodic_version_check)
-    t.start()
+    scheduler = BackgroundScheduler()
+    job = scheduler.add_job(periodic_version_check, "interval", minutes=1)
+    scheduler.start()
 
     print(f"bot is running")
     app.run(debug=True, host="0.0.0.0", port=webhook_port, use_reloader=False)
