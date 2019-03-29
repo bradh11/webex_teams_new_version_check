@@ -274,29 +274,27 @@ def alert_subscribers(messages):
 
     for user in subscribers:
         logger.info(f"sending {messages} to {user['room_title']}")
-        # TODO: api.messages.create  and send update messages
+
         try:
-            api.messages.create(
-                user["room_id"], markdown=f"## Webex Teams Update Notification:"
-            )
-            for message in messages:
-                api.messages.create(user["room_id"], markdown=message)
-            api.messages.create(
-                user["room_id"], markdown=f"\nTo unsubscribe just type `unsubscribe`\n\n"
-            )
+            message_heading = f"## Webex Teams Update Notification:\n\n"
+            message_body = "".join(messages)
+            message_footer = f"To unsubscribe just type `unsubscribe`\n\n"
+            new_message = message_heading + message_body + message_footer
+
+            api.messages.create(user["room_id"], markdown=new_message)
         except Exception as e:
+            unsubscribe_to_updates(room_id=user['room_id'], reason="404 not found")
             logger.error(e)
+            logger.error(f"unable to send to room {user['room_id']}: {user['room_id']}")
 
 def construct_version_update_messages(version_check):
     messages = []
     for ver in version_check:
         for platform, version in ver.items():
-            messages.append(
-                f"Webex Teams for {platform} has been updated to version {version}."
-            )
+            messages.append(f"* Webex Teams for {platform} has been updated to version {version}.\n\n")
 
     messages.append(
-        f"To learn more, you can check out the [release notes]({release_notes}) and find out [what's new]({whats_new})"
+        f"To learn more, you can check out the [release notes]({release_notes}) and find out [what's new]({whats_new}).  "
     )
 
     return messages
