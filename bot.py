@@ -273,8 +273,6 @@ def alert_subscribers(messages):
     subscribers = db.search(User.subscribed == True)
 
     for user in subscribers:
-        logger.info(f"sending {messages} to {user['room_title']}")
-
         try:
             message_heading = f"## Webex Teams Update Notification:\n\n"
             message_body = "".join(messages)
@@ -286,7 +284,9 @@ def alert_subscribers(messages):
             unsubscribe_to_updates(room_id=user['room_id'], reason="404 not found")
             logger.error(e)
             logger.error(f"unable to send to room {user['room_id']}: {user['room_id']}")
-
+        else:
+            logger.info(f"sending {messages} to {user['room_title']}")
+            
 def construct_version_update_messages(version_check):
     messages = []
     for ver in version_check:
