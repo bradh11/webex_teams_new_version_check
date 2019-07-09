@@ -332,7 +332,7 @@ if __name__ == "__main__":
         print(message)
 
     scheduler = BackgroundScheduler()
-    job = scheduler.add_job(periodic_version_check, "interval", minutes=1)
+    job = scheduler.add_job(periodic_version_check, "interval", minutes=7)
     scheduler.start()
 
     print(f"bot is running")
