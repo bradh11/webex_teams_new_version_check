@@ -1,6 +1,6 @@
 # Webex Teams update notifier BOT
 
-This bot was created to autonomously check if a new version of Webex Teams was released. It will check every 30 minutes and alert any rooms the bot is a member of. The room/user has the ability to unsubscribe from the notification messages if they so choose as well.
+This bot was created to autonomously check if a new version of Webex Teams was released. It will check every 7 minutes and alert any rooms the bot is a member of. The room/user has the ability to unsubscribe from the notification messages if they so choose as well.
 
 ## To use the bot
 
